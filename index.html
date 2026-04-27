@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Efficiency Is Not Enough — Data Centers Need Regulation</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --ink: #f0ede8;
+  --dim: rgba(240,237,232,0.5);
+  --faint: rgba(240,237,232,0.2);
+  --accent: #e8c547;
+  --hot: #ff5533;
+  --cool: #44aaff;
+  --toxic: #55ee66;
+  --bg: #080a0f;
+}
+
+html { scroll-behavior: smooth; }
+body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--ink); overflow-x: hidden; }
+
+#c { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+
+/* ── NAV ── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 900;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 48px; height: 54px;
+  border-bottom: 1px solid rgba(240,237,232,0.06);
+  background: rgba(8,10,15,0.7); backdrop-filter: blur(20px);
+}
+.nav-title { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--accent); letter-spacing: 0.1em; text-transform: uppercase; }
+.nav-links { display: flex; gap: 32px; }
+.nav-links a { font-size: 0.72rem; color: var(--dim); text-decoration: none; transition: color 0.2s; }
+.nav-links a:hover { color: var(--ink); }
+
+/* ── PROGRESS ── */
+#prog { position: fixed; top: 0; left: 0; height: 2px; background: linear-gradient(90deg,var(--accent),var(--hot)); z-index: 1000; width: 0%; }
+
+/* ── HERO ── */
+#hero {
+  position: relative; z-index: 10; min-height: 100vh;
+  display: flex; flex-direction: column; justify-content: flex-end;
+  padding: 0 10vw 11vh;
+}
+
+.hero-kicker {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--accent);
+  letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 24px;
+  opacity: 0; transform: translateY(10px); animation: fu 0.8s ease 0.3s forwards;
+}
+
+.hero-h1 {
+  font-family: 'DM Serif Display', serif;
+  font-size: clamp(3.6rem, 8.5vw, 9rem);
+  line-height: 0.93; letter-spacing: -0.025em; max-width: 14ch;
+  opacity: 0; transform: translateY(20px); animation: fu 1s ease 0.5s forwards;
+}
+.hero-h1 em { font-style: italic; color: var(--accent); }
+
+.hero-context {
+  margin-top: 40px; max-width: 58ch; font-size: 1.05rem; line-height: 1.8; color: var(--dim);
+  opacity: 0; transform: translateY(14px); animation: fu 1s ease 0.75s forwards;
+}
+.hero-context strong { color: var(--ink); font-weight: 500; }
+
+.hero-thesis {
+  margin-top: 32px; max-width: 68ch;
+  padding: 24px 28px; border-left: 2px solid var(--accent);
+  background: rgba(232,197,71,0.05); font-size: 0.95rem; line-height: 1.85; color: var(--dim);
+  opacity: 0; transform: translateY(14px); animation: fu 1s ease 0.95s forwards;
+}
+.hero-thesis strong { color: var(--ink); font-weight: 500; }
+
+.scroll-hint {
+  margin-top: 52px; display: flex; align-items: center; gap: 12px;
+  font-family: 'JetBrains Mono', monospace; font-size: 0.64rem; color: var(--faint);
+  letter-spacing: 0.12em; text-transform: uppercase;
+  opacity: 0; animation: fu 1s ease 1.1s forwards;
+}
+.scroll-line { width: 36px; height: 1px; background: var(--faint); transform-origin: left; animation: gl 1.2s ease 1.3s both; }
+
+@keyframes fu { to { opacity: 1; transform: none; } }
+@keyframes gl { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+/* ── TICKER ── */
+.ticker-wrap {
+  overflow: hidden; white-space: nowrap; position: relative; z-index: 10;
+  border-top: 1px solid rgba(240,237,232,0.06); border-bottom: 1px solid rgba(240,237,232,0.06);
+  background: rgba(232,197,71,0.025); padding: 13px 0;
+}
+.ticker-inner { display: inline-flex; animation: ticker 32s linear infinite; }
+.ticker-item {
+  display: inline-flex; align-items: center; gap: 20px; padding: 0 40px;
+  font-family: 'JetBrains Mono', monospace; font-size: 0.66rem; color: var(--faint);
+  letter-spacing: 0.08em; text-transform: uppercase;
+}
+.ticker-dot { width: 3px; height: 3px; border-radius: 50%; background: var(--accent); opacity: 0.5; flex-shrink: 0; }
+@keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+
+/* ── STAT BAND ── */
+#stat-band {
+  position: relative; z-index: 10; display: flex;
+  border-bottom: 1px solid rgba(240,237,232,0.07);
+  background: rgba(8,10,15,0.88); backdrop-filter: blur(16px);
+}
+.stat { flex: 1; padding: 40px 48px; border-right: 1px solid rgba(240,237,232,0.07); }
+.stat:last-child { border-right: none; }
+.stat-num { font-family: 'DM Serif Display', serif; font-size: 3rem; color: var(--accent); line-height: 1; margin-bottom: 8px; }
+.stat-label { font-size: 0.76rem; color: var(--dim); line-height: 1.65; max-width: 22ch; }
+.stat-source { font-family: 'JetBrains Mono', monospace; font-size: 0.56rem; color: var(--faint); margin-top: 6px; letter-spacing: 0.06em; }
+
+/* ── SECTIONS ── */
+section { position: relative; z-index: 10; }
+
+.content-wrap { max-width: 1160px; margin: 0 auto; padding: 110px 10vw; }
+
+.section-num {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.63rem; color: var(--accent);
+  letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 44px;
+  display: flex; align-items: center; gap: 14px;
+}
+.section-num::after { content: ''; flex: 0 0 44px; height: 1px; background: var(--accent); opacity: 0.35; }
+
+.section-h2 {
+  font-family: 'DM Serif Display', serif; font-size: clamp(2.2rem, 4vw, 3.6rem);
+  line-height: 1.1; letter-spacing: -0.02em; max-width: 24ch; margin-bottom: 44px;
+}
+.section-h2 em { font-style: italic; color: var(--hot); }
+.section-h2 .c  { color: var(--cool); }
+.section-h2 .t  { color: var(--toxic); }
+.section-h2 .y  { color: var(--accent); }
+
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 72px; align-items: start; }
+
+.body-text { font-size: 0.98rem; color: var(--dim); line-height: 1.9; }
+.body-text p { margin-bottom: 1.15em; }
+.body-text p:last-child { margin-bottom: 0; }
+.body-text strong { color: var(--ink); font-weight: 500; }
+.body-text em { color: var(--accent); font-style: normal; }
+
+/* Pull quote */
+.pull-quote {
+  padding: 28px 0 28px 24px; border-left: 2px solid var(--accent); margin: 40px 0;
+  font-family: 'DM Serif Display', serif; font-size: 1.3rem; font-style: italic;
+  color: var(--ink); line-height: 1.55;
+}
+.pull-quote cite {
+  display: block; font-family: 'Inter', sans-serif; font-style: normal;
+  font-size: 0.7rem; color: var(--dim); letter-spacing: 0.04em; margin-top: 14px;
+}
+
+/* Callout box */
+.callout {
+  background: rgba(232,197,71,0.04); border: 1px solid rgba(232,197,71,0.18);
+  border-radius: 3px; padding: 36px 40px; margin: 36px 0;
+}
+.callout.red { background: rgba(255,85,51,0.04); border-color: rgba(255,85,51,0.18); }
+.callout.blue { background: rgba(68,170,255,0.04); border-color: rgba(68,170,255,0.18); }
+.callout-head {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; color: var(--accent);
+  letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 10px;
+}
+.callout.red .callout-head { color: var(--hot); }
+.callout.blue .callout-head { color: var(--cool); }
+.callout-body { font-size: 0.95rem; color: var(--dim); line-height: 1.8; }
+.callout-body strong { color: var(--ink); font-weight: 500; }
+
+/* ── JEVONS CHART ── */
+.jevons-wrap {
+  background: rgba(255,85,51,0.03); border: 1px solid rgba(255,85,51,0.14);
+  border-radius: 3px; padding: 36px; overflow: hidden;
+}
+.jevons-label-row {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.58rem; color: var(--faint);
+  letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 24px;
+}
+.jrow { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+.jrow:last-child { margin-bottom: 0; }
+.jlbl { width: 110px; flex-shrink: 0; font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; color: var(--faint); text-transform: uppercase; letter-spacing: 0.06em; }
+.jbar {
+  height: 26px; border-radius: 2px; display: flex; align-items: center;
+  padding: 0 11px; font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; font-weight: 500;
+  white-space: nowrap; width: 0%; transition: width 1.3s cubic-bezier(0.16,1,0.3,1);
+}
+.jbar.eff  { background: rgba(68,170,255,0.14); color: var(--cool); border-left: 2px solid var(--cool); }
+.jbar.dem  { background: rgba(255,85,51,0.14);  color: var(--hot);  border-left: 2px solid var(--hot); }
+.jbar.net  { background: rgba(232,197,71,0.14); color: var(--accent); border-left: 2px solid var(--accent); }
+
+/* ── SOLUTIONS ── */
+.solutions-list { margin-top: 44px; border: 1px solid rgba(240,237,232,0.07); }
+.sol-item {
+  display: grid; grid-template-columns: 52px 1fr auto;
+  gap: 28px; padding: 36px 40px; align-items: start;
+  border-bottom: 1px solid rgba(240,237,232,0.06);
+  transition: background 0.25s;
+}
+.sol-item:last-child { border-bottom: none; }
+.sol-item:hover { background: rgba(240,237,232,0.02); }
+.sol-n { font-family: 'DM Serif Display', serif; font-size: 1.9rem; color: rgba(232,197,71,0.18); line-height: 1; padding-top: 2px; }
+.sol-title { font-size: 0.95rem; font-weight: 500; color: var(--ink); margin-bottom: 6px; }
+.sol-body { font-size: 0.84rem; color: var(--dim); line-height: 1.78; }
+.sol-tag {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.58rem; color: var(--accent);
+  border: 1px solid rgba(232,197,71,0.22); padding: 3px 9px; border-radius: 2px;
+  letter-spacing: 0.06em; white-space: nowrap; align-self: start; margin-top: 2px;
+}
+
+/* ── POLICY TABLE ── */
+.ptable { margin-top: 44px; border: 1px solid rgba(240,237,232,0.07); }
+.prow {
+  display: grid; grid-template-columns: 46px 1fr 1.6fr auto;
+  border-bottom: 1px solid rgba(240,237,232,0.06); transition: background 0.2s;
+}
+.prow:last-child { border-bottom: none; }
+.prow:hover { background: rgba(240,237,232,0.02); }
+.prow.hdr { background: rgba(240,237,232,0.025); pointer-events: none; }
+.pcell { padding: 18px 22px; font-size: 0.82rem; color: var(--dim); border-right: 1px solid rgba(240,237,232,0.06); line-height: 1.65; }
+.pcell:last-child { border-right: none; }
+.pcell.flag { font-size: 1.3rem; display: flex; align-items: center; justify-content: center; padding: 18px 14px; }
+.prow.hdr .pcell { font-family: 'JetBrains Mono', monospace; font-size: 0.58rem; color: var(--faint); letter-spacing: 0.1em; text-transform: uppercase; }
+.pcell strong { color: var(--ink); font-weight: 500; }
+.pill { display: inline-block; font-family: 'JetBrains Mono', monospace; font-size: 0.58rem; letter-spacing: 0.06em; padding: 3px 9px; border-radius: 2px; margin-top: 4px; }
+.p-lead { background: rgba(85,238,102,0.1); color: var(--toxic); border: 1px solid rgba(85,238,102,0.2); }
+.p-mid  { background: rgba(232,197,71,0.1);  color: var(--accent); border: 1px solid rgba(232,197,71,0.2); }
+.p-lag  { background: rgba(255,85,51,0.1);   color: var(--hot);    border: 1px solid rgba(255,85,51,0.2); }
+
+/* ── COUNTERARGUMENT ── */
+.counter-wrap { margin-top: 44px; }
+.counter-side {
+  padding: 32px 36px; border-radius: 3px; margin-bottom: 12px;
+}
+.counter-side.against { background: rgba(68,170,255,0.04); border: 1px solid rgba(68,170,255,0.15); }
+.counter-side.for     { background: rgba(232,197,71,0.04); border: 1px solid rgba(232,197,71,0.15); }
+.counter-label {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; letter-spacing: 0.1em;
+  text-transform: uppercase; margin-bottom: 10px;
+}
+.counter-side.against .counter-label { color: var(--cool); }
+.counter-side.for .counter-label     { color: var(--accent); }
+.counter-text { font-size: 0.9rem; color: var(--dim); line-height: 1.8; }
+.counter-text strong { color: var(--ink); font-weight: 500; }
+
+/* ── CTA ── */
+#cta {
+  position: relative; min-height: 100vh; display: flex; flex-direction: column;
+  justify-content: center; padding: 0 10vw;
+  border-top: 1px solid rgba(240,237,232,0.06); overflow: hidden;
+}
+.cta-bg { position: absolute; bottom: -0.1em; left: -0.03em; font-family: 'DM Serif Display', serif; font-size: clamp(7rem,20vw,20rem); font-style: italic; color: rgba(240,237,232,0.022); white-space: nowrap; pointer-events: none; line-height: 1; user-select: none; }
+.cta-inner { position: relative; z-index: 2; max-width: 700px; }
+.cta-h2 { font-family: 'DM Serif Display', serif; font-size: clamp(2.6rem,5vw,4.4rem); line-height: 1.06; letter-spacing: -0.02em; margin-bottom: 24px; }
+.cta-h2 em { font-style: italic; color: var(--hot); }
+.cta-body { font-size: 1rem; color: var(--dim); line-height: 1.88; margin-bottom: 44px; }
+.cta-body strong { color: var(--ink); font-weight: 500; }
+.btns { display: flex; gap: 12px; flex-wrap: wrap; }
+.btn { display: inline-block; font-size: 0.82rem; font-weight: 500; padding: 13px 26px; border-radius: 2px; text-decoration: none; transition: all 0.2s; letter-spacing: 0.02em; }
+.btn-primary { background: var(--accent); color: #080a0f; }
+.btn-primary:hover { background: #f0d060; }
+.btn-ghost { background: transparent; color: var(--ink); border: 1px solid rgba(240,237,232,0.2); }
+.btn-ghost:hover { border-color: rgba(240,237,232,0.38); }
+.byline { margin-top: 60px; padding-top: 28px; border-top: 1px solid rgba(240,237,232,0.08); font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; color: var(--faint); line-height: 1.9; letter-spacing: 0.04em; }
+
+.hr { height: 1px; background: rgba(240,237,232,0.07); }
+
+/* ── REVEAL ── */
+.reveal { opacity: 0; transform: translateY(22px); transition: opacity 0.75s ease, transform 0.75s ease; }
+.reveal.visible { opacity: 1; transform: none; }
+.d1 { transition-delay: 0.1s; } .d2 { transition-delay: 0.2s; } .d3 { transition-delay: 0.32s; } .d4 { transition-delay: 0.46s; }
+
+/* ── MOBILE ── */
+@media (max-width: 800px) {
+  nav { padding: 0 22px; } .nav-links { display: none; }
+  #hero { padding: 0 6vw 10vh; }
+  .content-wrap { padding: 80px 6vw; }
+  .two-col { grid-template-columns: 1fr; gap: 40px; }
+  .stat { padding: 26px 22px; } .stat-num { font-size: 2.2rem; }
+  .sol-item { grid-template-columns: 40px 1fr; } .sol-tag { display: none; }
+  .prow { grid-template-columns: 38px 1fr 1.4fr; } .pcell:nth-child(4) { display: none; }
+  #cta { padding: 80px 6vw; }
+}
+</style>
+</head>
+<body>
+
+<canvas id="c"></canvas>
+<div id="prog"></div>
+
+<nav>
+  <div class="nav-title">Efficiency Is Not Enough</div>
+  <div class="nav-links">
+    <a href="#scale">Scale</a>
+    <a href="#paradox">Paradox</a>
+    <a href="#impact">Impact</a>
+    <a href="#solutions">Solutions</a>
+    <a href="#policy">Policy</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-kicker">Abhinav Raj &nbsp;·&nbsp; RHET 105 &nbsp;·&nbsp; UIUC &nbsp;·&nbsp; April 2026</div>
+  <h1 class="hero-h1">Efficiency<br>is <em>not</em><br>enough.</h1>
+  <p class="hero-context">
+    Before researching this topic, I thought of data centers as just facilities that hosted the internet —
+    emails, YouTube videos — without ever considering their environmental impact.
+    <strong>That changed.</strong>
+  </p>
+  <div class="hero-thesis">
+    Technical solutions alone cannot meaningfully reduce the environmental harm of data centers because of Jevons' Paradox.
+    Governments need to pair them with three specific regulatory measures — <strong>energy consumption caps,
+    mandatory environmental reporting, and stricter siting standards</strong> — to close the gap between
+    efficiency gains and actual energy reduction.
+  </div>
+  <div class="scroll-hint"><span class="scroll-line"></span>Scroll to explore</div>
+</section>
+
+<!-- TICKER -->
+<div class="ticker-wrap"><div class="ticker-inner" id="ticker"></div></div>
+
+<!-- STAT BAND -->
+<div id="stat-band">
+  <div class="stat reveal">
+    <div class="stat-num">415</div>
+    <div class="stat-label">TWh consumed by data centers in 2024 — roughly equal to Japan or Australia</div>
+    <div class="stat-source">IEA, 2025</div>
+  </div>
+  <div class="stat reveal d1">
+    <div class="stat-num">945</div>
+    <div class="stat-label">TWh projected by 2030 — more than doubling in six years</div>
+    <div class="stat-source">IEA, 2025</div>
+  </div>
+  <div class="stat reveal d2">
+    <div class="stat-num">12%</div>
+    <div class="stat-label">Annual growth since 2017 — more than 4× faster than global electricity overall</div>
+    <div class="stat-source">IEA, 2025</div>
+  </div>
+  <div class="stat reveal d3">
+    <div class="stat-num">900M</div>
+    <div class="stat-label">Weekly ChatGPT users as of February 2026 — every query runs on a data center</div>
+    <div class="stat-source">Malik, TechCrunch 2026</div>
+  </div>
+</div>
+
+<!-- SCALE -->
+<section id="scale">
+  <div class="content-wrap">
+    <div class="section-num reveal">01 — The Scale</div>
+    <div class="two-col">
+      <div>
+        <h2 class="section-h2 reveal">A machine the size of <em>a country.</em></h2>
+        <div class="body-text reveal d1">
+          <p>Data centers are large facilities that house servers, networking equipment, and storage systems to process and store the data and models that AI tools use. We have trillion-dollar companies like Google, Amazon, Microsoft, OpenAI, and Anthropic running "hyperscale" data centers that consume <strong>hundreds of megawatts of power</strong> — almost equivalent to a medium-sized power plant.</p>
+          <p>The energy required to power a single large data center can serve tens of thousands of homes. Data centers in the United States alone account for approximately <strong>two percent of the country's total electricity consumption</strong> — and it is only getting worse as AI models become more complex and require significantly more computational power to train and run than even a few years ago.</p>
+          <p>No one predicted this much growth. Tools like ChatGPT, Gemini, Claude, Grok, Deepseek, AWS, iCloud, and streaming platforms have emerged drastically and are now part of everyday life. In February 2026, ChatGPT alone recorded <strong>900 million weekly users</strong>.</p>
+        </div>
+      </div>
+      <div>
+        <div class="callout reveal d2">
+          <div class="callout-head">The AI multiplier</div>
+          <div class="callout-body">
+            AI models have become more complex and require significantly more computational power to train and run than they did even a few years ago. <strong>This isn't a niche infrastructure problem</strong> — it's a civilizational-scale resource question dressed up in server racks.
+          </div>
+        </div>
+        <div class="pull-quote reveal d3">
+          "Data centers accounted for around 1.5% of the world's total energy consumption in 2024 — roughly equivalent to the annual consumption of a country like Japan or Australia."
+          <cite>— International Energy Agency, Energy and AI (2025)</cite>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="hr"></div>
+
+<!-- PARADOX -->
+<section id="paradox">
+  <div class="content-wrap">
+    <div class="section-num reveal">02 — Jevons' Paradox</div>
+    <h2 class="section-h2 reveal">The rebound effect that swallows every <em>efficiency gain.</em></h2>
+    <div class="two-col">
+      <div class="body-text reveal d1">
+        <p>The standard industry response to criticism is: <em>we're getting more efficient.</em> And it's true. PUE ratios have improved, chip performance per watt has improved, cooling systems have improved. The problem is that none of this has reduced total energy consumption.</p>
+        <p>This is Jevons' Paradox: when you make something use less energy, it costs less to use, which makes people want to use it more — and this can actually lead to <strong>more energy use, not less</strong>. It goes all the way back to the 1800s, when coal and steam engines became efficient enough that Britain didn't use less coal — it used vastly more.</p>
+        <p>There's a new chip with faster clock speeds or a new cooling system every year. It makes computing a little cheaper. That lower cost allows new applications and more users, which drives demand right back up. Fich et al. confirm that <strong>"the rebound effect poses a significant challenge to sustainability policies"</strong> because focusing only on efficiency improvements while ignoring demand may make matters worse, not better.</p>
+        <p>What I find particularly interesting is that Guitart himself recognizes this — he warns that energy efficiency could lead to higher workload demand because of lower energy costs — but his strategy never proposes regulatory solutions. <strong>Scholars identify the problem. None of them propose how to regulate the demand driving it.</strong></p>
+      </div>
+      <div>
+        <div class="jevons-wrap reveal d2" id="jevons-vis">
+          <div class="jevons-label-row">Data Center Energy — 2017 → 2024 (IEA)</div>
+          <div class="jrow">
+            <div class="jlbl">Efficiency gain</div>
+            <div class="jbar eff" id="jb1">per-operation energy −40%</div>
+          </div>
+          <div class="jrow">
+            <div class="jlbl">Demand growth</div>
+            <div class="jbar dem" id="jb2">workloads +300%+</div>
+          </div>
+          <div class="jrow">
+            <div class="jlbl">Net energy use</div>
+            <div class="jbar net" id="jb3">total use +180%</div>
+          </div>
+        </div>
+        <div class="pull-quote reveal d3">
+          "Energy efficiency could lead to higher workload demand because of lower energy costs."
+          <cite>— Guitart, <em>Toward Sustainable Data Centers</em> (2017, p.609) — acknowledging Jevons' Paradox in his own paper, without proposing a solution for it</cite>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="hr"></div>
+
+<!-- IMPACT -->
+<section id="impact">
+  <div class="content-wrap">
+    <div class="section-num reveal">03 — Real Impact</div>
+    <h2 class="section-h2 reveal">The bill lands on the <span class="c">water,</span> the <em>air,</em> and the <span class="t">community.</span></h2>
+    <div class="two-col">
+      <div class="body-text reveal d1">
+        <p><strong>Water.</strong> Data centers rely on water-intensive cooling systems that use millions of gallons every year. Once water runs through these cooling systems, it is often returned to the environment as <strong>heated wastewater</strong>, evaporated entirely through cooling towers, or contaminated with chemicals like biocides used to keep algae and bacteria from clogging equipment.</p>
+        <p>Even though water is technically renewable, water consumed by data centers is effectively removed from the local supply for a long time. In areas already dealing with drought and water scarcity, this creates significant problems for local communities that need water for drinking, bathing, agriculture, and irrigation.</p>
+        <p><strong>Carbon.</strong> PUE only tells you how efficiently a data center uses electricity. It says nothing about whether that electricity is clean. A data center can have an excellent PUE and still be draining a regional aquifer or running on a coal-heavy grid. That is a pretty significant gap if the goal is real sustainability and not just better numbers on a report.</p>
+      </div>
+      <div class="body-text reveal d2">
+        <p><strong>Community.</strong> I came across documentaries during my research about communities living near data centers that either had heavily contaminated water or no water at all. One thing that struck me was <strong>how little the people nearby knew about the facilities before they were built</strong>, and how little say they had in the process.</p>
+        <p>The people who actually do have a say are usually local zoning boards, county commissioners, and state economic development offices — all heavily incentivized to approve these projects because of tax revenue and construction jobs. The residents who actually live next to these sites rarely show up in those decisions in a meaningful way.</p>
+        <div class="callout red" style="margin-top:28px;">
+          <div class="callout-head">The PUE gap</div>
+          <div class="callout-body">
+            Grochulska-Salak et al. argue that the industry needs to move past PUE as the main metric and start tracking water use, waste heat recovery, embodied carbon, and land use. <strong>The metrics that make facilities look good are widely reported. The metrics that reveal harm are not.</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="hr"></div>
+
+<!-- LITERATURE -->
+<section id="literature">
+  <div class="content-wrap">
+    <div class="section-num reveal">04 — What Researchers Say</div>
+    <h2 class="section-h2 reveal">The technical foundation — and <em>where it stops short.</em></h2>
+    <div class="two-col">
+      <div class="body-text reveal d1">
+        <p><strong>Rong et al.</strong> cover server virtualization, workload consolidation, and better cooling systems — arguing these are effective ways to reduce energy use. Each can meaningfully reduce per-server energy consumption, but their effectiveness is bounded by how much demand the facility faces. Their article treats the environmental problem as something solvable through better engineering.</p>
+        <p><strong>Guitart</strong> takes a similar approach but goes further with a six-step strategy covering IT efficiency, cooling optimization, power supply improvements, renewable energy, energy markets, and customizing all of this to each data center's local conditions. A data center in a cool climate near a hydroelectric grid will benefit from very different optimizations than one in a hot, fossil-fuel-heavy region. I think this is a more complete way of looking at the problem than focusing on one technology at a time.</p>
+      </div>
+      <div class="body-text reveal d2">
+        <p><strong>Grochulska-Salak et al.</strong> look at "green and blue infrastructure" — biogas power plants, green roofs, water retention basins, and biodiversity corridors. What I found interesting is that it goes beyond just making the facility itself more efficient and looks at how it interacts with the environment around it.</p>
+        <p>Across all of these researchers, the path forward is mainly framed as building better and greener data centers, and their work is genuinely valuable. <strong>But what they share is a focus on making individual facilities more efficient without addressing what happens when demand grows faster than those improvements can keep up with.</strong></p>
+        <div class="callout" style="margin-top:28px;">
+          <div class="callout-head">The gap this essay fills</div>
+          <div class="callout-body">
+            The technical improvements researchers describe are the foundation. But the foundation alone is not enough. It has to be paired with regulation that addresses the demand-side growth that engineering alone cannot constrain.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="hr"></div>
+
+<!-- SOLUTIONS -->
+<section id="solutions">
+  <div class="content-wrap">
+    <div class="section-num reveal">05 — What Actually Works</div>
+    <h2 class="section-h2 reveal">Three regulations that <span class="t">close the gap</span> efficiency can't.</h2>
+    <div class="body-text reveal d1" style="max-width:64ch;">
+      <p>Fich et al. point out that very few energy policies address rebound effects, and when they do exist, they tend to underestimate how significant the effect actually is. They suggest economic measures like carbon taxes and cap-and-trade systems — but only if designed carefully enough to actually change the incentives driving demand. This isn't just a technology problem. It is an economic and political one.</p>
+    </div>
+    <div class="solutions-list reveal d2">
+      <div class="sol-item">
+        <div class="sol-n">01</div>
+        <div>
+          <div class="sol-title">Energy Consumption Caps</div>
+          <div class="sol-body">Instead of only encouraging efficiency improvements, governments should impose a strict limit on how much electricity a data center can use — based on the facility's capacity or what the regional grid can actually support. This directly addresses Jevons' Paradox because even if individual servers become more efficient, overall facility energy use remains capped. Ireland provides a clear example: in 2022, EirGrid stopped approving new data center connections in the Dublin area because the grid could not keep up with residential demands alongside data center needs. While not a formal cap, it effectively acted like one and curtailed the unchecked growth Jevons' Paradox predicts.</div>
+        </div>
+        <div class="sol-tag">Demand-side</div>
+      </div>
+      <div class="sol-item">
+        <div class="sol-n">02</div>
+        <div>
+          <div class="sol-title">Mandatory Environmental Reporting</div>
+          <div class="sol-body">Data centers should be required to publicly report total energy use, water consumption, and carbon emissions — not just PUE. Voluntary industry standards usually fail to create real pressure to improve, but mandatory public reporting does. This allows investors, journalists, and the public to compare facilities and identify those that are merely pretending to be environmentally friendly. The EU's revised Energy Efficiency Directive already does this: operators across all 27 member countries must report energy and water usage data annually to an EU database.</div>
+        </div>
+        <div class="sol-tag">Transparency</div>
+      </div>
+      <div class="sol-item">
+        <div class="sol-n">03</div>
+        <div>
+          <div class="sol-title">Stricter Siting Standards</div>
+          <div class="sol-body">Currently, data centers are often built where land is cheap, electricity is accessible, and tax breaks are high — with very little attention to local water supplies or nearby communities. There should be environmental impact assessments before approval, just like we do for refineries, chemical plants, and other major industrial projects. Operators should have to evaluate water usage, grid pressure, noise, and ecosystem disruption before construction. Grochulska-Salak et al.'s proposed KPIs for water use, land use, and biodiversity could provide a baseline for what those assessments should cover. Local water authorities should have veto power over projects that threaten community supply.</div>
+        </div>
+        <div class="sol-tag">Prevention</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="hr"></div>
+
+<!-- POLICY -->
+<section id="policy">
+  <div class="content-wrap">
+    <div class="section-num reveal">06 — Global Policy Scorecard</div>
+    <h2 class="section-h2 reveal">Who's acting — and who's <em>falling behind.</em></h2>
+    <div class="body-text reveal d1" style="max-width:62ch;margin-bottom:0;">
+      <p>The gap between leading and lagging jurisdictions is not technical — it's political. The regulatory tools exist. The question is whether governments choose to use them.</p>
+    </div>
+    <div class="ptable reveal d2">
+      <div class="prow hdr">
+        <div class="pcell"></div>
+        <div class="pcell">Region</div>
+        <div class="pcell">What they've done</div>
+        <div class="pcell">Status</div>
+      </div>
+      <div class="prow">
+        <div class="pcell flag">🇪🇺</div>
+        <div class="pcell"><strong>European Union</strong></div>
+        <div class="pcell">Under the revised Energy Efficiency Directive, data center operators across all 27 member countries must report energy and water usage data annually to an EU database. Legally binding, not voluntary.</div>
+        <div class="pcell"><span class="pill p-lead">Leading</span></div>
+      </div>
+      <div class="prow">
+        <div class="pcell flag">🇮🇪</div>
+        <div class="pcell"><strong>Ireland</strong></div>
+        <div class="pcell">EirGrid stopped approving new data center connections in the Dublin area in 2022 when the grid could not keep up. Effectively acted as a consumption cap and curtailed unchecked growth.</div>
+        <div class="pcell"><span class="pill p-lead">Leading</span></div>
+      </div>
+      <div class="prow">
+        <div class="pcell flag">🇸🇬</div>
+        <div class="pcell"><strong>Singapore</strong></div>
+        <div class="pcell">Working directly with industry to set stricter standards — supports data centers achieving PUE of 1.3 or lower. Lifted a three-year moratorium in 2022 under a "call for applications" model. Progress, but enforcement depends on industry cooperation.</div>
+        <div class="pcell"><span class="pill p-mid">Progressing</span></div>
+      </div>
+      <div class="prow">
+        <div class="pcell flag">🌐</div>
+        <div class="pcell"><strong>Voluntary Industry</strong></div>
+        <div class="pcell">RE100 pledges, PUE disclosures, carbon neutrality commitments. All voluntary. None constrain demand. Commitments are routinely pushed back to 2030 or 2040 when they become inconvenient. If a company makes data centers 50% more efficient but doubles total facilities, the environmental impact doubles.</div>
+        <div class="pcell"><span class="pill p-lag">Not Enough</span></div>
+      </div>
+    </div>
+
+    <!-- COUNTERARGUMENT -->
+    <div class="section-num reveal" style="margin-top:72px;">Counterargument</div>
+    <h2 class="section-h2 reveal" style="max-width:28ch;">The market will handle it on its <em>own.</em></h2>
+    <div class="counter-wrap reveal d1">
+      <div class="counter-side against">
+        <div class="counter-label">The pushback</div>
+        <div class="counter-text">Google, Microsoft, and Amazon have <strong>heavily invested in renewable energy</strong> and made multiple public commitments to become carbon neutral. Why do we need government regulation when the largest companies are already acting voluntarily?</div>
+      </div>
+      <div class="counter-side for">
+        <div class="counter-label">My response</div>
+        <div class="counter-text">There is a structural problem with relying entirely on voluntary action: <strong>it doesn't factor in demand and growth.</strong> If a company makes its data centers fifty percent more efficient but builds twice as many facilities to keep up with AI demand, it ends up doubling their total environmental impact. Voluntary commitments are voluntary — companies can quietly push back timelines or revise goals when they become inconvenient. That's exactly what the data shows happening right now.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section id="cta">
+  <div class="cta-bg">Enough.</div>
+  <div class="cta-inner">
+    <div class="section-num reveal">Conclusion</div>
+    <h2 class="cta-h2 reveal">The technology won't save us. <em>Policy will.</em></h2>
+    <p class="cta-body reveal d1">
+      When I started researching this topic, I thought data centers were just facilities that supported the internet. Learning about Jevons' Paradox — and seeing how communities near these facilities are actually affected — changed how I thought about the whole problem.
+      <br><br>
+      The technical solutions that Rong et al., Guitart, and Grochulska-Salak et al. propose are necessary but aren't enough on their own because of the rebound effect that Fich et al. describe. As long as making computing more efficient makes it cheaper, and cheaper makes it more abundant, those gains will be outpaced by new demand.
+      <br><br>
+      <strong>The data center industry can be made sustainable only if we are willing to pair better technology with smarter regulation.</strong>
+    </p>
+    <div class="btns reveal d2">
+      <a href="https://www.iea.org/reports/energy-and-ai" target="_blank" class="btn btn-primary">IEA: Energy &amp; AI Report &rarr;</a>
+      <a href="https://www.datacenterknowledge.com/regulations/data-center-regulation-trends-to-watch-in-2025" target="_blank" class="btn btn-ghost">DC Regulation Trends</a>
+    </div>
+    <div class="byline reveal d3">
+      Abhinav Raj &nbsp;·&nbsp; RHET 105 &nbsp;·&nbsp; University of Illinois Urbana-Champaign &nbsp;·&nbsp; April 2026<br>
+      Sources: IEA (2025) &nbsp;·&nbsp; Fich et al., <em>Energies</em> (2022) &nbsp;·&nbsp; Grochulska-Salak et al., <em>Energies</em> (2025) &nbsp;·&nbsp; Guitart, <em>Computing</em> (2017) &nbsp;·&nbsp; Rong et al., <em>RSER</em> (2016) &nbsp;·&nbsp; Data Center Knowledge (2024) &nbsp;·&nbsp; Malik, TechCrunch (2026)
+    </div>
+  </div>
+</section>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+'use strict';
+
+/* ── PROGRESS ── */
+window.addEventListener('scroll',function(){
+  var s=window.scrollY,h=document.body.scrollHeight-window.innerHeight;
+  document.getElementById('prog').style.width=(s/Math.max(h,1)*100)+'%';
+},{passive:true});
+
+/* ── TICKER ── */
+var items=[
+  '415 TWh consumed by data centers in 2024',
+  'Roughly equal to all of Japan or Australia',
+  '12% annual growth since 2017',
+  'More than 4× global electricity growth rate',
+  'Expected to reach 945 TWh by 2030',
+  '900 million weekly ChatGPT users — Feb 2026',
+  'EU mandates reporting across all 27 member states',
+  'Ireland\'s EirGrid halted new connections in 2022',
+  'Jevons\' Paradox: efficiency drives more demand',
+  'PUE says nothing about total energy or water',
+  'Voluntary commitments can be quietly revised',
+  'US data centers: ~2% of national electricity',
+];
+var t=document.getElementById('ticker'),h='';
+for(var r=0;r<2;r++)items.forEach(function(x){h+='<span class="ticker-item"><span class="ticker-dot"></span>'+x+'</span>';});
+t.innerHTML=h;
+
+/* ── REVEAL ── */
+var io=new IntersectionObserver(function(e){e.forEach(function(x){if(x.isIntersecting)x.target.classList.add('visible');});},{threshold:0.1,rootMargin:'0px 0px -36px 0px'});
+document.querySelectorAll('.reveal').forEach(function(el){io.observe(el);});
+
+/* ── JEVONS BARS ── */
+var bDone=false;
+var jio=new IntersectionObserver(function(e){
+  if(e[0].isIntersecting&&!bDone){
+    bDone=true;
+    setTimeout(function(){document.getElementById('jb1').style.width='38%';},200);
+    setTimeout(function(){document.getElementById('jb2').style.width='88%';},520);
+    setTimeout(function(){document.getElementById('jb3').style.width='62%';},840);
+  }
+},{threshold:0.3});
+var jv=document.getElementById('jevons-vis');
+if(jv)jio.observe(jv);
+
+/* ── THREE.JS BACKGROUND ── */
+if(typeof THREE==='undefined'){document.getElementById('c').style.background='#080a0f';return;}
+
+var canvas=document.getElementById('c');
+var renderer=new THREE.WebGLRenderer({canvas:canvas,antialias:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+renderer.setSize(window.innerWidth,window.innerHeight);
+renderer.setClearColor(0x080a0f,1);
+
+var scene=new THREE.Scene();
+var cam=new THREE.PerspectiveCamera(60,window.innerWidth/window.innerHeight,0.1,2000);
+cam.position.set(0,0,100);
+
+/* Stars */
+var sArr=new Float32Array(1400*3);
+for(var i=0;i<1400;i++){sArr[i*3]=(Math.random()-.5)*900;sArr[i*3+1]=(Math.random()-.5)*700;sArr[i*3+2]=(Math.random()-.5)*200-60;}
+var sGeo=new THREE.BufferGeometry();sGeo.setAttribute('position',new THREE.BufferAttribute(sArr,3));
+scene.add(new THREE.Points(sGeo,new THREE.PointsMaterial({color:0xffffff,size:0.45,transparent:true,opacity:0.3,sizeAttenuation:true})));
+
+/* Data streams — falling columns of colored dots */
+var COLS=[0xe8c547,0x44aaff,0x55ee66,0xff5533,0xaa88ff,0xe8c547,0x44aaff,0x55ee66];
+var streams=[];
+var xs=[-88,-72,-56,-42,-30,-20,-12,-4,4,12,20,30,42,56,72,88];
+xs.forEach(function(x,idx){
+  var c=COLS[idx%COLS.length];
+  var big=idx%4===0;
+  var cnt=big?90:45;
+  var arr=new Float32Array(cnt*3);
+  for(var i=0;i<cnt;i++){arr[i*3]=x+(Math.random()-.5)*1.2;arr[i*3+1]=(Math.random()-.5)*260;arr[i*3+2]=-15-Math.random()*35;}
+  var g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(arr,3));
+  var pts=new THREE.Points(g,new THREE.PointsMaterial({color:c,size:big?1.0:0.6,transparent:true,opacity:big?0.5:0.24,sizeAttenuation:true}));
+  scene.add(pts);
+  streams.push({pts:pts,arr:arr,cnt:cnt,spd:0.28+Math.random()*0.38,x:x});
+});
+
+/* Grid lines */
+var gm=new THREE.LineBasicMaterial({color:0xe8c547,transparent:true,opacity:0.035});
+for(var gi=-12;gi<=12;gi++){
+  var lg=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-220,gi*11,-45),new THREE.Vector3(220,gi*11,-45)]);
+  scene.add(new THREE.Line(lg,gm));
+}
+var gm2=new THREE.LineBasicMaterial({color:0xe8c547,transparent:true,opacity:0.018});
+for(var gj=-22;gj<=22;gj+=2){
+  var vg=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(gj*10,-220,-45),new THREE.Vector3(gj*10,220,-45)]);
+  scene.add(new THREE.Line(vg,gm2));
+}
+
+scene.add(new THREE.AmbientLight(0x080c18,4));
+var l1=new THREE.PointLight(0xe8c547,1.4,130);l1.position.set(-45,35,-65);scene.add(l1);
+var l2=new THREE.PointLight(0x44aaff,1.1,110);l2.position.set(55,-25,-65);scene.add(l2);
+
+/* Camera scroll */
+var tY=0,cY=0,tZ=100,cZ=100,sp=0;
+window.addEventListener('scroll',function(){
+  var s=window.scrollY,h=document.body.scrollHeight-window.innerHeight;
+  sp=s/Math.max(h,1);tY=-sp*38;tZ=100-sp*18;
+},{passive:true});
+
+var mx=0,my=0;
+document.addEventListener('mousemove',function(e){mx=(e.clientX/window.innerWidth-.5)*2;my=(e.clientY/window.innerHeight-.5)*2;});
+
+var tick=0;
+function animate(){
+  requestAnimationFrame(animate);
+  tick+=0.007;
+  cY+=(tY-cY)*0.038;cZ+=(tZ-cZ)*0.038;
+  cam.position.set(mx*2.5,cY-my*1.8,cZ);
+  cam.lookAt(0,cY,0);
+
+  streams.forEach(function(s,si){
+    for(var i=0;i<s.cnt;i++){
+      s.arr[i*3+1]-=s.spd;
+      s.arr[i*3]=s.x+Math.sin(tick*0.45+i*0.35+si)*0.35;
+      if(s.arr[i*3+1]<-130){s.arr[i*3+1]=130+Math.random()*18;s.arr[i*3]=s.x+(Math.random()-.5)*1.2;}
+    }
+    s.pts.geometry.attributes.position.needsUpdate=true;
+    var base=si%4===0?0.45:0.22;
+    s.pts.material.opacity=base*0.96+base*0.2*Math.sin(tick*0.55+si*0.9);
+  });
+
+  l1.intensity=1.2+0.4*Math.sin(tick*0.65);
+  l2.intensity=0.9+0.35*Math.sin(tick*0.5+1.2);
+
+  renderer.render(scene,cam);
+}
+animate();
+
+window.addEventListener('resize',function(){
+  renderer.setSize(window.innerWidth,window.innerHeight);
+  cam.aspect=window.innerWidth/window.innerHeight;
+  cam.updateProjectionMatrix();
+});
+}());
+</script>
+</body>
+</html>
